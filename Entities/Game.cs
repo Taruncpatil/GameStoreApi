@@ -1,6 +1,6 @@
-namespace GameStoreApi.Dtos
+namespace GameStoreApi.Entities
 {
-    public class GameDto
+    public class Game
     {
         public int Id { get; set; }
         public string Name { get; set; }

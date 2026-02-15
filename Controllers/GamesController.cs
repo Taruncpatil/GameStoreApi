@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using GameStoreApi.Models;
+using GameStoreApi.Services;
 using GameStoreApi.Dtos;
 
 namespace GameStoreApi.Controllers
@@ -8,92 +8,67 @@ namespace GameStoreApi.Controllers
     [Route("games")]
     public class GamesController : ControllerBase
     {
-        // Temporary in-memory list (fake database)
-        private static List<Game> games = new()
+        private readonly IGameService service;
+
+        public GamesController(IGameService service)
         {
-            new Game { Id = 1, Name = "FIFA 24", Genre = "Sports", Price = 59.99M },
-            new Game { Id = 2, Name = "GTA V", Genre = "Action", Price = 39.99M }
-        };
+            this.service = service;
+        }
 
         // GET /games
         [HttpGet]
         public IEnumerable<GameDto> GetGames()
         {
-            return games.Select(game => new GameDto
-            {
-                Id = game.Id,
-                Name = game.Name,
-                Genre = game.Genre,
-                Price = game.Price
-            });
+            return service.GetAll();
         }
 
-        // GET /games/1
+        // GET /games/{id}
         [HttpGet("{id}")]
         public ActionResult<GameDto> GetGame(int id)
         {
-            var game = games.Find(g => g.Id == id);
+            var game = service.GetById(id);
 
             if (game == null)
                 return NotFound();
 
-            return new GameDto
-            {
-                Id = game.Id,
-                Name = game.Name,
-                Genre = game.Genre,
-                Price = game.Price
-            };
+            return game;
         }
+
+        // POST /games
         [HttpPost]
-    public ActionResult<GameDto> CreateGame(GameDto gameDto)
-{
-    Game game = new()
-    {
-        Id = games.Max(g => g.Id) + 1,
-        Name = gameDto.Name,
-        Genre = gameDto.Genre,
-        Price = gameDto.Price
-    };
+        public ActionResult<GameDto> CreateGame(CreateGameDto newGame)
+        {
+            var game = service.Create(newGame);
 
-    games.Add(game);
+            return CreatedAtAction(
+                nameof(GetGame),
+                new { id = game.Id },
+                game
+            );
+        }
 
-    return new GameDto
-    {
-        Id = game.Id,
-        Name = game.Name,
-        Genre = game.Genre,
-        Price = game.Price
-    };
-}
-    [HttpPut("{id}")]
-    public IActionResult UpdateGame(int id, GameDto updatedGame)
-    {
-    var game = games.Find(g => g.Id == id);
+        // PUT /games/{id}
+        [HttpPut("{id}")]
+        public IActionResult UpdateGame(int id, UpdateGameDto updatedGame)
+        {
+            var success = service.Update(id, updatedGame);
 
-    if (game == null)
-        return NotFound();
+            if (!success)
+                return NotFound();
 
-    game.Name = updatedGame.Name;
-    game.Genre = updatedGame.Genre;
-    game.Price = updatedGame.Price;
+            return NoContent();
+        }
 
-    return NoContent();
-}
+        // DELETE /games/{id}
+        [HttpDelete("{id}")]
+        public IActionResult DeleteGame(int id)
+        {
+            var success = service.Delete(id);
 
-    [HttpDelete("{id}")]
-public IActionResult DeleteGame(int id)
-{
-    var game = games.Find(g => g.Id == id);
+            if (!success)
+                return NotFound();
 
-    if (game == null)
-        return NotFound();
-
-    games.Remove(game);
-
-    return NoContent();
-}
-
-    
-}
+            return NoContent();
+        }
+    }
 }
